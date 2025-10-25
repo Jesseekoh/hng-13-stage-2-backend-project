@@ -189,3 +189,9 @@ yarn.lock
 uploads/
 public/uploads/
 storage/
+
+/generated/prisma
+
+/generated/prisma
+
+/generated/prisma
