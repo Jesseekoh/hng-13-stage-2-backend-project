@@ -19,13 +19,13 @@ datasource db {
 
 model Country {
   id                String      @id @default(cuid())
-  name              String
-  capital           String
-  region            String
+  name              String      @unique
+  capital           String?
+  region            String?
   population        Int
-  currency_code     String
-  exchange_rate     Float
-  estimated_gdp     Float
-  flag_url          String
-  last_refreshed_at DateTime
+  currency_code     String?
+  exchange_rate     Float?
+  estimated_gdp     Float?
+  flag_url          String?
+  last_refreshed_at DateTime @updatedAt
 }
