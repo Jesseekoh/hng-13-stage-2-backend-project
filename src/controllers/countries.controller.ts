@@ -26,7 +26,7 @@ class CountriesController {
       });
       res.status(200).json({
         total_countries: totalCountries,
-        last_refreshed: lastRefreshed?.last_refreshed_at,
+        last_refreshed_at: lastRefreshed?.last_refreshed_at,
       });
     } catch (error) {
       logger.error(error);

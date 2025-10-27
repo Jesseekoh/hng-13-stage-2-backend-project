@@ -1,155 +1,76 @@
-# Country Currency & Exchange API
+# Countries API
 
-A RESTful API that fetches country data from external APIs, stores it in a MySQL database, and provides CRUD operations with currency exchange rate calculations.
+A RESTful API for managing and querying country data with population, currency, and GDP information.
 
-## Features
+## API Documentation
 
-- Fetch country data from REST Countries API
-- Retrieve exchange rates from Open Exchange Rates API
-- Calculate estimated GDP using population and exchange rates
-- Generate summary images with top countries by GDP
-- Support for filtering and sorting countries
-- Comprehensive error handling and validation
-- MySQL database with automatic schema initialization
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Environment Variables](#environment-variables)
-- [Database Setup](#database-setup)
-- [Running the Application](#running-the-application)
-- [API Endpoints](#api-endpoints)
-- [Error Handling](#error-handling)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-
-## Prerequisites
-
-- Node.js (v18 or higher)
-- MySQL (v8.0 or higher)
-- pnpm package manager
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd stage-2-project
+### Base URL
+```
+http://localhost:5000
 ```
 
-2. Install dependencies:
-```bash
-pnpm install
-```
+### Endpoints
 
-3. Create environment file:
-```bash
-cp .env.example .env
-```
+#### 1. Get API Status
+Get the current status of the API including total countries and last refresh time.
 
-4. Configure your environment variables in `.env` file
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=country_currency_db
-
-# API Configuration
-COUNTRIES_API_URL=https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies
-EXCHANGE_RATE_API_URL=https://open.er-api.com/v6/latest/USD
-
-# Cache Configuration
-CACHE_DIR=cache
-IMAGE_FILENAME=summary.png
-```
-
-## Database Setup
-
-1. Create a MySQL database:
-```sql
-CREATE DATABASE country_currency_db;
-```
-
-2. The application will automatically create the required tables on first run:
-   - `countries` - Stores country data
-   - `system_info` - Tracks refresh timestamps
-
-## Running the Application
-
-### Development
-```bash
-pnpm run dev
-```
-
-### Production
-```bash
-pnpm run build
-pnpm start
-```
-
-The API will be available at `http://localhost:3000`
-
-## API Endpoints
-
-### 1. Refresh Countries Data
-
-**POST** `/countries/refresh`
-
-Fetches country data and exchange rates from external APIs and caches them in the database.
+**Endpoint:** `GET /status`
 
 **Response:**
 ```json
 {
-  "message": "Countries data refreshed successfully",
-  "updated": 25,
-  "inserted": 225,
-  "total": 250
+  "total_countries": 250,
+  "last_refreshed_at": "2025-10-27T10:30:00.000Z"
 }
 ```
 
-**Error Responses:**
+**Status Codes:**
+- `200 OK` - Success
+
+---
+
+#### 2. Refresh Countries Data
+Fetch and update country data from external sources (restcountries.com and exchange rates API).
+
+**Endpoint:** `POST /countries/refresh`
+
+**Response:**
+```json
+{
+  "message": "Countries refreshed successfully"
+}
+```
+
+**Status Codes:**
+- `200 OK` - Data refreshed successfully
+- `503 Service Unavailable` - External data source unavailable
+
+**Error Response:**
 ```json
 {
   "error": "External data source unavailable",
-  "details": "Could not fetch data from Countries API"
+  "details": "Could not fetch data from restcountries"
 }
 ```
 
-### 2. Get All Countries
+---
 
-**GET** `/countries`
+#### 3. Get All Countries
+Retrieve a list of countries with optional filtering and sorting.
 
-Retrieves all countries from the database with optional filtering and sorting.
+**Endpoint:** `GET /countries`
 
 **Query Parameters:**
-- `region` - Filter by region (e.g., `Africa`, `Europe`)
-- `currency` - Filter by currency code (e.g., `NGN`, `USD`)
-- `sort` - Sort results:
-  - `name_asc` - Sort by name (A-Z)
-  - `name_desc` - Sort by name (Z-A)
-  - `population_asc` - Sort by population (lowest first)
-  - `population_desc` - Sort by population (highest first)
-  - `gdp_asc` - Sort by estimated GDP (lowest first)
-  - `gdp_desc` - Sort by estimated GDP (highest first)
+- `region` (optional) - Filter by region (e.g., "Africa", "Europe", "Asia")
+- `currency` (optional) - Filter by currency code (e.g., "USD", "EUR", "NGN")
+- `sort` (optional) - Sort by GDP (`gdp_desc` for descending order)
 
-**Examples:**
+**Example Requests:**
 ```
+GET /countries
 GET /countries?region=Africa
-GET /countries?currency=NGN
-GET /countries?sort=gdp_desc
-GET /countries?region=Africa&sort=population_desc
+GET /countries?currency=USD
+GET /countries?region=Europe&sort=gdp_desc
 ```
 
 **Response:**
@@ -161,34 +82,31 @@ GET /countries?region=Africa&sort=population_desc
     "capital": "Abuja",
     "region": "Africa",
     "population": 206139589,
-    "currency_code": "NGN",
-    "exchange_rate": 1600.23,
-    "estimated_gdp": 25767448125.2,
     "flag_url": "https://flagcdn.com/ng.svg",
-    "last_refreshed_at": "2025-01-15T18:00:00Z"
+    "currency_code": "NGN",
+    "exchange_rate": 1620.5,
+    "estimated_gdp": 334567891234.5,
+    "last_refreshed_at": "2025-10-27T10:30:00.000Z"
   },
-  {
-    "id": 2,
-    "name": "Ghana",
-    "capital": "Accra",
-    "region": "Africa",
-    "population": 31072940,
-    "currency_code": "GHS",
-    "exchange_rate": 15.34,
-    "estimated_gdp": 3029834520.6,
-    "flag_url": "https://flagcdn.com/gh.svg",
-    "last_refreshed_at": "2025-01-15T18:00:00Z"
-  }
+  ...
 ]
 ```
 
-### 3. Get Single Country
+**Status Codes:**
+- `200 OK` - Success
+- `500 Internal Server Error` - Server error
 
-**GET** `/countries/:name`
+---
 
-Retrieves a single country by name (case-insensitive).
+#### 4. Get Country by Name
+Retrieve detailed information about a specific country.
 
-**Example:**
+**Endpoint:** `GET /countries/:name`
+
+**URL Parameters:**
+- `name` (required) - The name of the country
+
+**Example Request:**
 ```
 GET /countries/Nigeria
 ```
@@ -201,28 +119,63 @@ GET /countries/Nigeria
   "capital": "Abuja",
   "region": "Africa",
   "population": 206139589,
-  "currency_code": "NGN",
-  "exchange_rate": 1600.23,
-  "estimated_gdp": 25767448125.2,
   "flag_url": "https://flagcdn.com/ng.svg",
-  "last_refreshed_at": "2025-01-15T18:00:00Z"
+  "currency_code": "NGN",
+  "exchange_rate": 1620.5,
+  "estimated_gdp": 334567891234.5,
+  "last_refreshed_at": "2025-10-27T10:30:00.000Z"
 }
 ```
+
+**Status Codes:**
+- `200 OK` - Success
+- `404 Not Found` - Country not found
 
 **Error Response:**
 ```json
 {
-  "error": "Country not found"
+  "success": false,
+  "error": "County not found!"
 }
 ```
 
-### 4. Delete Country
+---
 
-**DELETE** `/countries/:name`
+#### 5. Get Summary Image
+Retrieve a generated summary image of country statistics.
 
-Deletes a country record by name (case-insensitive).
+**Endpoint:** `GET /countries/image`
 
-**Example:**
+**Response:**
+- Returns a PNG image file
+
+**Headers:**
+- `Content-Type: image/png`
+- `Cache-Control: public, max-age=3600`
+
+**Status Codes:**
+- `200 OK` - Image returned successfully
+- `404 Not Found` - Summary image not found
+- `500 Internal Server Error` - Server error
+
+**Error Response:**
+```json
+{
+  "error": "Summary image not found"
+}
+```
+
+---
+
+#### 6. Delete Country
+Delete a specific country from the database.
+
+**Endpoint:** `DELETE /countries/:name`
+
+**URL Parameters:**
+- `name` (required) - The name of the country to delete
+
+**Example Request:**
 ```
 DELETE /countries/Nigeria
 ```
@@ -234,6 +187,10 @@ DELETE /countries/Nigeria
 }
 ```
 
+**Status Codes:**
+- `204 No Content` - Country deleted successfully
+- `404 Not Found` - Country not found
+
 **Error Response:**
 ```json
 {
@@ -241,201 +198,62 @@ DELETE /countries/Nigeria
 }
 ```
 
-### 5. Get System Status
+---
 
-**GET** `/status`
+## Setup and Installation
 
-Returns the total number of countries and last refresh timestamp.
+### Prerequisites
+- Node.js (v16 or higher)
+- PostgreSQL database
+- npm or yarn
 
-**Response:**
-```json
-{
-  "total_countries": 250,
-  "last_refreshed_at": "2025-01-15T18:00:00Z"
-}
-```
+### Installation Steps
 
-### 6. Get Summary Image
-
-**GET** `/countries/image`
-
-Serves the generated summary image containing:
-- Total number of countries
-- Top 5 countries by estimated GDP
-- Last refresh timestamp
-
-**Response:** PNG image file
-
-**Error Response:**
-```json
-{
-  "error": "Summary image not found"
-}
-```
-
-## Data Processing Logic
-
-### Currency Handling
-- If a country has multiple currencies, only the first currency code is stored
-- If no currencies exist:
-  - `currency_code` is set to `null`
-  - `exchange_rate` is set to `null`
-  - `estimated_gdp` is set to `0`
-- If currency is not found in exchange rates API:
-  - `exchange_rate` is set to `null`
-  - `estimated_gdp` is set to `null`
-
-### GDP Calculation
-```
-estimated_gdp = population × random(1000-2000) ÷ exchange_rate
-```
-
-### Update vs Insert Logic
-- Countries are matched by name (case-insensitive)
-- Existing countries are updated with new data
-- New countries are inserted
-- Random GDP multiplier is regenerated on each refresh
-
-## Error Handling
-
-The API returns consistent JSON error responses:
-
-### 400 Bad Request
-```json
-{
-  "error": "Validation failed",
-  "details": {
-    "currency_code": "is required"
-  }
-}
-```
-
-### 404 Not Found
-```json
-{
-  "error": "Country not found"
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "error": "Internal server error"
-}
-```
-
-### 503 Service Unavailable
-```json
-{
-  "error": "External data source unavailable",
-  "details": "Could not fetch data from Exchange Rates API"
-}
-```
-
-## Database Schema
-
-### Countries Table
-```sql
-CREATE TABLE countries (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL UNIQUE,
-  capital VARCHAR(255),
-  region VARCHAR(255),
-  population BIGINT NOT NULL,
-  currency_code VARCHAR(10),
-  exchange_rate DECIMAL(15, 6),
-  estimated_gdp DECIMAL(20, 2),
-  flag_url TEXT,
-  last_refreshed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### System Info Table
-```sql
-CREATE TABLE system_info (
-  id INT PRIMARY KEY DEFAULT 1,
-  last_refreshed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  total_countries INT DEFAULT 0
-);
-```
-
-## Dependencies
-
-### Production Dependencies
-- `express` - Web framework
-- `mysql2` - MySQL database driver
-- `axios` - HTTP client for external APIs
-- `canvas` - Image generation
-- `dotenv` - Environment configuration
-- `cors` - Cross-origin resource sharing
-- `express-rate-limit` - Rate limiting
-- `pino` - Logging
-
-### Development Dependencies
-- `typescript` - Type checking
-- `ts-node-dev` - Development server
-- `@types/*` - Type definitions
-
-## Deployment
-
-### Railway (Recommended)
-1. Create a Railway account
-2. Connect your GitHub repository
-3. Add environment variables in Railway dashboard
-4. Deploy automatically on push
-
-### Heroku
-1. Install Heroku CLI
-2. Create Heroku app: `heroku create your-app-name`
-3. Add MySQL addon: `heroku addons:create jawsdb:kitefin`
-4. Set environment variables: `heroku config:set NODE_ENV=production`
-5. Deploy: `git push heroku main`
-
-### AWS/DigitalOcean
-1. Set up MySQL database
-2. Configure environment variables
-3. Build and deploy using PM2 or similar process manager
-
-## Testing
-
-Run the test suite:
+1. Clone the repository:
 ```bash
-pnpm test
+git clone <repository-url>
+cd stage-2-project
 ```
 
-Test individual endpoints:
+2. Install dependencies:
 ```bash
-# Refresh countries data
-curl -X POST http://localhost:3000/countries/refresh
-
-# Get all countries
-curl http://localhost:3000/countries
-
-# Get country by name
-curl http://localhost:3000/countries/Nigeria
-
-# Get status
-curl http://localhost:3000/status
+npm install
 ```
 
-## Contributing
+3. Set up environment variables:
+Create a `.env` file in the root directory with:
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/countries_db"
+PORT=5000
+```
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -am 'Add feature'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a pull request
+4. Run database migrations:
+```bash
+npx prisma migrate dev
+```
 
-## License
+5. Start the development server:
+```bash
+npm run dev
+```
 
-This project is licensed under the ISC License.
+The API will be available at `http://localhost:5000`
 
-## External APIs Used
+---
 
-- **REST Countries API**: https://restcountries.com/v2/all
-- **Open Exchange Rates API**: https://open.er-api.com/v6/latest/USD
+## Data Sources
 
-## Support
+- **Country Data:** [REST Countries API](https://restcountries.com)
+- **Exchange Rates:** [Open Exchange Rates API](https://open.er-api.com)
 
-For support or questions, please open an issue in the GitHub repository.
+---
+
+## Technologies Used
+
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **TypeScript** - Programming language
+- **Prisma** - ORM for database management
+- **MySQL** - Database
+- **Axios** - HTTP client
+- **Pino** - Logging library
